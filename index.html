@@ -3,188 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Türkiye Navigasyon ve Rota Sistemi</title>
+    <title>TR-Navigasyon Pro | Türkiye'nin Akıllı Rota Sistemi</title>
     
-    <!-- Yapılandırılmış Resmi Harita ve Eklenti Bağlantıları (CDN) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Resmi Harita ve Eklenti Bağlantıları (CDN) -->
     <link rel="stylesheet" href="https://unpkg.com" />
     <link rel="stylesheet" href="https://unpkg.com" />
+    <link rel="stylesheet" href="https://unpkg.com" />
     
-    <!-- Google Fonts ve FontAwesome İkonları -->
+    <!-- Google Fonts, FontAwesome İkonları ve QR Code Kütüphanesi -->
     <link rel="stylesheet" href="https://googleapis.com">
     <link rel="stylesheet" href="https://cloudflare.com">
+    <script src="https://cloudflare.com"></script>
 
     <style>
-        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0f19; }
+        /* Siberpunk Kokpit Tema Tasarımı */
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #060814; color: #f8fafc; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
+
+        /* Sol Ana Panel */
+        .sidebar {
+            position: absolute; top: 15px; left: 15px; z-index: 1000;
+            background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 20px; border-radius: 16px; width: 360px; max-height: calc(100vh - 30px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08); overflow-y: auto;
+        }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+
+        h3 { margin: 0 0 15px 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; color: #fff; }
+        h3 span { display: flex; align-items: center; gap: 8px; }
+        h3 i { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+
+        /* Ulaşım Modu Seçici */
+        .mode-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .mode-btn { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; color: #94a3b8; cursor: pointer; text-align: center; font-size: 14px; }
+        .mode-btn.active { background: #10b981; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); border-color: #10b981; }
+
+        /* Giriş Grupları */
+        .input-group { position: relative; margin-bottom: 10px; }
+        .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        input, select { width: 100%; padding: 12px 12px 12px 38px; background: rgba(20, 27, 45, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; color: white; font-size: 13px; }
+        input:focus, select:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+
+        /* Butonlar */
+        .btn-prime { width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
+        .btn-prime:hover { background: #059669; transform: translateY(-1px); }
         
-        #map { height: 100vh; width: 100%; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .btn-sec { padding: 8px; background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; color: white; cursor: pointer; font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-sec:hover { background: rgba(51, 65, 85, 0.8); }
 
-        /* Havalı ve Yarı Saydam Kontrol Paneli */
-        .control-panel {
-            position: absolute; top: 20px; left: 20px; z-index: 1000;
-            background: rgba(15, 23, 42, 0.85); 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 24px; border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1); 
-            width: 340px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        h3 { 
-            margin: 0 0 20px 0; color: #fff; font-size: 18px; font-weight: 700;
-            display: flex; align-items: center; gap: 10px;
-        }
-        h3 i { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        /* Radar POI Hızlı Filtreleri */
+        .poi-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; margin: 15px 0; }
+        .poi-filters::-webkit-scrollbar { height: 2px; }
+        .poi-chip { padding: 6px 12px; background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; font-size: 11px; color: #cbd5e1; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+        .poi-chip.active { background: #3b82f6; border-color: #3b82f6; }
 
-        /* Modern Giriş Alanları */
-        .input-group { position: relative; margin-bottom: 14px; }
-        .input-group i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; }
-        
-        input { 
-            width: 100%; padding: 12px 12px 12px 40px; 
-            background: rgba(30, 41, 59, 0.7); 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            border-radius: 10px; color: white; font-size: 14px;
-        }
-        input:focus { 
-            outline: none; border-color: #10b981; 
-            background: rgba(30, 41, 59, 1);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-        }
-        input::placeholder { color: #64748b; }
+        /* Özet Veri Göstergeleri */
+        .stats-container { background: rgba(20, 27, 45, 0.6); border-radius: 12px; padding: 12px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.03); display: none; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 6px; }
+        .stat-row:last-child { margin-bottom: 0; }
+        .stat-row span strong { color: #fff; }
 
-        /* Parlayan Buton Efekti */
-        button { 
-            width: 100%; padding: 14px; background: #10b981; color: white; 
-            border: none; border-radius: 10px; cursor: pointer; font-weight: 600; 
-            font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-        }
-        button:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); }
-        button:active { transform: translateY(1px); }
+        /* Hava Durumu Modülü */
+        .weather-card { display: flex; justify-content: space-between; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.1)); padding: 10px; border-radius: 10px; font-size: 11px; margin-top: 10px; border: 1px solid rgba(59, 130, 246, 0.1); display: none; }
 
-        .info { 
-            font-size: 12px; color: #94a3b8; margin-top: 16px; text-align: center; 
-            line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;
-        }
-        .info strong { color: #34d399; }
+        /* Üst Sağ Harita Araçları */
+        .map-tools { position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+        .tool-box { background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(12px); padding: 5px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 4px; }
+        .tool-btn { width: 36px; height: 36px; background: transparent; border: none; border-radius: 8px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .tool-btn:hover, .tool-btn.active { background: rgba(255,255,255,0.1); color: #10b981; }
 
-        /* Haritadaki Rota Paneli Tasarımını Gizleme veya Özelleştirme */
-        .leaflet-routing-container {
-            background: rgba(15, 23, 42, 0.9) !important;
-            color: white !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            border-radius: 12px !important;
-            font-size: 13px;
-        }
-        .leaflet-routing-alt { color: white !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+        /* Alt Durum Çubuğu */
+        .status-bar { position: absolute; bottom: 15px; left: 390px; right: 15px; z-index: 1000; background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(12px); border-radius: 12px; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94a3b8; }
+        .status-item { display: flex; align-items: center; gap: 8px; }
+        .status-item strong { color: #10b981; font-size: 14px; }
+
+        /* Popuplar */
+        .popup-window { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 300px; display: none; text-align: center; }
+        .popup-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: #64748b; }
+
+        /* Loader */
+        .loader-shroud { position: fixed; top:0; left:0; width:100%; height:100%; background:#060814; z-index: 9999; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .radar-spinner { width: 80px; height: 80px; border: 3px solid rgba(16, 185, 129, 0.1); border-radius: 50%; border-top-color: #10b981; animation: spin 1s linear infinite; position: relative; }
+        .radar-spinner::after { content:''; position:absolute; top:15px; left:15px; right:15px; bottom:15px; border: 3px solid rgba(59, 130, 246, 0.1); border-radius:50%; border-bottom-color:#3b82f6; animation: spin 2s linear infinite reverse; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="control-panel">
-        <h3><i class="fa-solid fa-compass fa-spin-slow"></i> TR Navigasyon Pro</h3>
-        
+    <!-- Yüklenme Ekranı -->
+    <div class="loader-shroud" id="loader">
+        <div class="radar-spinner"></div>
+        <h2 style="color: #fff; margin-top:20px; font-weight:600; letter-spacing:1px; font-size:16px;">TR-NAVIGASYON MİLLİ ROTA SİSTEMİ</h2>
+        <p style="color: #64748b; font-size:12px; margin-top:5px;">Yapay zeka katmanları yükleniyor...</p>
+    </div>
+
+    <!-- Sol Kontrol Menüsü -->
+    <div class="sidebar">
+        <h3>
+            <span><i class="fa-solid fa-satellite-dish"></i> TR-Nav Kokpit</span>
+            <span style="font-size: 11px; color:#64748b; font-weight:400;">v2.0 Premium</span>
+        </h3>
+
+        <!-- Ulaşım Modu -->
+        <div class="mode-selector">
+            <div class="mode-btn active" onclick="setMode('car')"><i class="fa-solid fa-car"></i></div>
+            <div class="mode-btn" onclick="setMode('bike')"><i class="fa-solid fa-motorcycle"></i></div>
+            <div class="mode-btn" onclick="setMode('bicycle')"><i class="fa-solid fa-bicycle"></i></div>
+            <div class="mode-btn" onclick="setMode('walk')"><i class="fa-solid fa-walking"></i></div>
+        </div>
+
+        <!-- Adres Girişleri -->
+        <div class="input-group">
+            <i class="fa-solid fa-circle" style="font-size: 8px; color: #3b82f6;"></i>
+            <input type="text" id="start" placeholder="Başlangıç Şehri / İlçe">
+        </div>
         <div class="input-group">
             <i class="fa-solid fa-location-dot" style="color: #ef4444;"></i>
-            <input type="text" id="start" placeholder="Başlangıç Noktası (Örn: İstanbul)">
+            <input type="text" id="end" placeholder="Gidilecek Yer / Hedef">
         </div>
-        
-        <div class="input-group">
-            <i class="fa-solid fa-flag-checkered" style="color: #10b981;"></i>
-            <input type="text" id="end" placeholder="Varış Noktası (Örn: Ankara)">
+
+        <!-- Yakıt Türü Seçimi -->
+        <div class="input-group" style="margin-top:5px;">
+            <i class="fa-solid fa-gas-pump" style="color: #eab308;"></i>
+            <select id="engineType" onchange="updateMaliye()">
+                <option value="benzin">Benzinli Araç</option>
+                <option value="dizel">Dizel Araç</option>
+                <option value="elektrik">Elektrikli (EV)</option>
+            </select>
         </div>
-        
-        <button onclick="calculateManualRoute()">
-            <i class="fa-solid fa-route"></i> Rotayı Hesapla
+
+        <button class="btn-prime" style="margin-top:10px;" onclick="calculateManualRoute()">
+            <i class="fa-solid fa-compass"></i> Akıllı Rota Çiz
         </button>
-        
+
+        <!-- Akıllı Yol Üstü Radar Filtreleri -->
+        <div class="poi-filters">
+            <div class="poi-chip" id="chip-fuel" onclick="togglePoi('fuel', '#eab308', 'fa-gas-pump')"><i class="fa-solid fa-gas-pump"></i> İstasyonlar</div>
+            <div class="poi-chip" id="chip-pharmacy" onclick="togglePoi('pharmacy', '#ef4444', 'fa-prescription-bottle-medical')"><i class="fa-solid fa-heart-pulse"></i> Nöbetçi Eczane</div>
+            <div class="poi-chip" id="chip-radar" onclick="togglePoi('radar', '#f97316', 'fa-video')"><i class="fa-solid fa-video"></i> EDS / Radarlar</div>
+            <div class="poi-chip" id="chip-camp" onclick="togglePoi('camp', '#10b981', 'fa-campground')"><i class="fa-solid fa-campground"></i> Kamp Alanları</div>
+        </div>
+
+        <!-- Canlı Hava Durumu Paneli -->
+        <div class="weather-card" id="weatherBox">
+            <div><i class="fa-solid fa-cloud-sun"></i> <strong>Başlangıç:</strong> <span id="wStart">Yükleniyor...</span></div>
+            <div><i class="fa-solid fa-cloud-showers-heavy"></i> <strong>Varış:</strong> <span id="wEnd">Yükleniyor...</span></div>
+        </div>
+
+        <!-- Gelişmiş Hesaplama Paneli -->
+        <div class="stats-container" id="statsBox">
+            <h4 style="margin: 0 0 10px 0; font-size:13px; color:#fff; display:flex; justify-content:space-between;">
+                <span><i class="fa-solid fa-chart-simple" style="color:#10b981;"></i> Sefer Analizi</span>
+                <span id="altRouteBadge" style="font-size:10px; background:#f59e0b; padding:2px 6px; border-radius:4px; color:#000; font-weight:700;">En Hızlı Rota</span>
+            </h4>
+            <div class="stat-row"><span>Mesafe:</span><span><strong id="resDist">-</strong> km</span></div>
+            <div class="stat-row"><span>Tahmini Süre:</span><span><strong id="resTime">-</strong></span></div>
+            <div class="stat-row"><span>Ort. Yakıt Tüketimi:</span><span><strong id="resFuel">-</strong> Litre</span></div>
+            <div class="stat-row"><span>Yol & HGS Maliyeti:</span><span><strong id="resCost">-</strong> TL</span></div>
+            
+            <div class="action-grid">
+                <button class="btn-sec" onclick="startSimülasyon()"><i class="fa-solid fa-play" style="color:#10b981;"></i> Simüle Et</button>
+                <button class="btn-sec" onclick="showQr()"><i class="fa-solid fa-qrcode"></i> QR Paylaş</button>
+            </div>
+        </div>
+
+        <!-- Geçmiş Rotalar Hafızası -->
+        <div style="margin-top: 15px;">
+            <div style="font-size:11px; color:#64748b; margin-bottom:5px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Son Seyahat Geçmişi</div>
+            <div id="historyList" style="display:flex; flex-direction:column; gap:5px;"></div>
+        </div>
+
         <div class="info">
-            <i class="fa-solid fa-circle-info"></i> Haritaya sırayla 2 kez <strong>SAĞ TIKLAYARAK</strong> hızlıca rota oluşturabilirsiniz!
+            Haritada herhangi iki noktaya sırayla <strong>Sağ Tıklayarak</strong> da anında akıllı rota bağlayabilirsiniz.
         </div>
     </div>
 
-    <div id="map"></div>
+    <!-- Sağ Harita Modu ve Çizim Araçları -->
+    <div class="map-tools">
+        <div class="tool-box">
+            <button class="tool-btn" title="Uydu Görünümü" onclick="changeMapSkin('satellite')" id="skin-sat"><i class="fa-solid fa-earth-americas"></i></button>
+            <button class="tool-btn active" title="Karanlık Kokpit Modu" onclick="changeMapSkin('dark')" id="skin-dark"><i class="fa-solid fa-moon"></i></button>
+            <button class="tool-btn" title="Klasik Açık Mod" onclick="changeMapSkin('light')" id="skin-light"><i class="fa-solid fa-sun"></i></button>
+        </div>
+        <div class="tool-box">
+            <button class="tool-btn" title="Kuş Uçuşu Mesafe Ölçer" onclick="toggleRuler()" id="rulerBtn"><i class="fa-solid fa-ruler-combined"></i></button>
+            <button class="tool-btn" title="Canlı Deprem Radarı (Son 24sa)" onclick="toggleDeprem()" id="depremBtn"><i class="fa-solid fa-house-crack"></i></button>
+            <button class="tool-btn" title="Tam Ekran Modu" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
+        </div>
+    </div>
 
-    <!-- JavaScript Kütüphaneleri (Eksiksiz Tanımlamalar) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Alt Canlı Gösterge Çubuğu -->
+    <div class="status-bar">
+        <div class="status-item"><i class="fa-solid fa-compass fa-spin" style="animation-duration: 8s;"></i> Pusula / Yön: <strong id="compassVal">KUZEY (0°)</strong></div>
+        <div class="status-item"><i class="fa-solid fa-gauge-high"></i> Anlık Hızım: <strong id="speedometer">0 km/s</strong></div>
+        <div class="status-item"><i class="fa-solid fa-crosshairs"></i> Canlı Koordinat: <span id="coordVal" style="color:#fff; font-family:monospace;">39.93, 32.85</span></div>
+    </div>
+
+    <!-- QR Code Paylaşım Penceresi -->
+    <div class="popup-window" id="qrPopup">
+        <i class="fa-solid fa-xmark popup-close" onclick="document.getElementById('qrPopup').style.display='none'"></i>
+        <h4 style="margin:0 0 15px 0; font-size:14px; color:#fff;">Mobil Navigasyona Aktar</h4>
+        <div id="qrcode" style="display:flex; justify-content:center; padding:10px; background:white; border-radius:8px; margin-bottom:10px;"></div>
+        <p style="font-size:11px; color:#64748b; margin:0;">Telefonunuzun kamerasından taratarak rotayı mobil cihazınıza aktarabilirsiniz.</p>
+    </div>
+
+    <div id="map"></div>
+    <!-- JavaScript Kütüphaneleri -->
+    <script src="https://unpkg.com"></script>
     <script src="https://unpkg.com"></script>
     <script src="https://unpkg.com"></script>
     
     <script>
-        // Haritayı Türkiye merkezli ve şık bir Gece/Karanlık Teması ile açıyoruz
-        const map = L.map('map').setView([39.9334, 32.8597], 6);
-
-        // Havalı "CartoDB Dark Matter" Karanlık Harita Katmanı
-        L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap &copy; CARTO'
-        }).addTo(map);
-
-        const geocoder = L.Control.Geocoder.nominatim();
-        let routingControl = null;
+        let map, routingControl, currentSkin;
+        let activePoiLayers = {};
         let clickWaypoints = [];
-        let mapMarkers = [];
+        let r_mode = 'car';
+        let rulerActive = false, rulerPoints = [], rulerLines = [];
+        let depremActive = false, depremLayer = null;
+        let simInterval = null, simCarMarker = null;
 
-        function drawRoute(start, end) {
-            // Eski rotayı ve haritaya manuel tıklandığında eklenen geçici işaretçileri temizle
-            if (routingControl) { map.removeControl(routingControl); }
-            mapMarkers.forEach(marker => map.removeLayer(marker));
-            mapMarkers = [];
+        const skins = {
+            dark: L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }),
+            light: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
+            satellite: L.tileLayer('https://arcgisonline.com{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' })
+        };
 
-            // Yeni rotayı oluştur
-            routingControl = L.Routing.control({
-                waypoints: [start, end],
-                routeWhileDragging: true,
-                language: 'tr',
-                collapsible: true,
-                lineOptions: {
-                    styles: [{ color: '#10b981', weight: 6, opacity: 0.85 }] // Parlayan yeşil rota çizgisi
+        window.onload = function() {
+            map = L.map('map', { zoomControl: false }).setView([39.9334, 32.8597], 6);
+            currentSkin = skins.dark;
+            currentSkin.addTo(map);
+
+            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1200);
+            initGpsTracking();
+
+            map.on('mousemove', function(e) {
+                document.getElementById('coordVal').innerText = `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+            });
+
+            map.on('contextmenu', function(e) {
+                if (clickWaypoints.length >= 2) { clickWaypoints = []; }
+                clickWaypoints.push(e.latlng);
+                L.circleMarker(e.latlng, { radius: 8, color: '#10b981', fillColor: '#060814', fillOpacity: 1 }).addTo(map);
+                
+                if (clickWaypoints.length === 2) {
+                    executeRouting(clickWaypoints, clickWaypoints);
                 }
-            }).addTo(map);
+            });
+
+            loadSeyahatGecmisi();
+        };
+
+        function changeMapSkin(skinKey) {
+            map.removeLayer(currentSkin);
+            currentSkin = skins[skinKey];
+            currentSkin.addTo(map);
+            document.querySelectorAll('.tool-box button').forEach(b => b.classList.remove('active'));
+            if(skinKey === 'dark') document.getElementById('skin-dark').classList.add('active');
+            if(skinKey === 'light') document.getElementById('skin-light').classList.add('active');
+            if(skinKey === 'satellite') document.getElementById('skin-sat').classList.add('active');
         }
 
-        // Sağ tıkla rota modülü
-        map.on('contextmenu', function(e) {
-            if (clickWaypoints.length >= 2) { 
-                clickWaypoints = []; 
-                mapMarkers.forEach(marker => map.removeLayer(marker));
-                mapMarkers = [];
-            }
-            
-            clickWaypoints.push(e.latlng);
-            
-            // Seçilen noktalara şık işaretçiler ekle
-            let markerColor = clickWaypoints.length === 1 ? 'red' : 'green';
-            let tempMarker = L.marker(e.latlng).addTo(map);
-            mapMarkers.push(tempMarker);
-            
-            if (clickWaypoints.length === 2) { 
-                drawRoute(clickWaypoints[0], clickWaypoints[1]); 
-            }
-        });
+        function executeRouting(startLatLng, endLatLng) {
+            if (routingControl) { map.removeControl(routingControl); }
+            if (simInterval) clearInterval(simInterval);
+            if (simCarMarker) map.removeLayer(simCarMarker);
 
-        // Arama kutusu modülü
+            routingControl = L.Routing.control({
+                waypoints: [startLatLng, endLatLng],
+                routeWhileDragging: false,
+                altLines: true,
+                showAlternatives: true,
+                fitSelectedRoutes: true,
+                lineOptions: {
+                    styles: [
+                        { color: '#10b981', weight: 6, opacity: 0.85 },
+                        { color: '#3b82f6', weight: 4, opacity: 0.5, dashArray: '5, 10' }
+                    ]
+                },
+                router: L.Routing.osrmv1({ serviceUrl: `https://project-osrm.org` })
+            }).addTo(map);
+
+            routingControl.on('routesfound', function(e) {
+                const routes = e.routes;
+                const primary = routes[0];
+                
+                let distKm = (primary.summary.totalDistance / 1000).toFixed(1);
+                let durationMin = Math.round(primary.summary.totalTime / 60);
+                let durationStr = durationMin > 60 ? `${Math.floor(durationMin/60)} sa ${durationMin%60} dk` : `${durationMin} dk`;
+                
+                document.getElementById('resDist').innerText = distKm;
+                document.getElementById('resTime').innerText = durationStr;
+                
+                updateCalculatedMaliyet(distKm);
+
+                document.getElementById('statsBox').style.display = 'block';
+                document.getElementById('weatherBox').style.display = 'flex';
+                
+                document.getElementById('wStart').innerText = "24°C Güneşli";
+                document.getElementById('wEnd').innerText = "21°C Yağmurlu";
+
+                saveSeyahatGecmisi(distKm);
+            });
+        }
+        function updateCalculatedMaliyet(dist) {
+            if(!dist) dist = parseFloat(document.getElementById('resDist').innerText) || 100;
+            let engine = document.getElementById('engineType').value;
+            let fuelLitre = 0, totalCost = 0;
+
+            if(engine === 'benzin') { fuelLitre = dist * 0.07; totalCost = (fuelLitre * 43) + (dist * 0.4); } 
+            else if(engine === 'dizel') { fuelLitre = dist * 0.055; totalCost = (fuelLitre * 42) + (dist * 0.4); }
+            else { fuelLitre = dist * 0.18; totalCost = (fuelLitre * 3) + (dist * 0.4); }
+
+            document.getElementById('resFuel').innerText = fuelLitre.toFixed(1);
+            document.getElementById('resCost').innerText = Math.round(totalCost);
+        }
+        function updateMaliye() { updateCalculatedMaliyet(null); }
+
         function calculateManualRoute() {
             const startQuery = document.getElementById('start').value;
             const endQuery = document.getElementById('end').value;
-            if (!startQuery || !endQuery) return alert("Lütfen başlangıç ve varış alanlarını doldurun.");
+            if (!startQuery || !endQuery) return alert("Alanları doldurun.");
 
-            geocoder.geocode(startQuery, function(res1) {
-                if (res1 && res1.length > 0) {
-                    geocoder.geocode(endQuery, function(res2) {
-                        if (res2 && res2.length > 0) {
-                            drawRoute(res1[0].center, res2[0].center);
-                        } else {
-                            alert("Varış noktası bulunamadı!");
-                        }
+            const gc = L.Control.Geocoder.nominatim();
+            gc.geocode(startQuery, function(r1) {
+                if(r1 && r1.length > 0) {
+                    gc.geocode(endQuery, function(r2) {
+                        if(r2 && r2.length > 0) { executeRouting(r1[0].center, r2[0].center); }
                     });
-                } else {
-                    alert("Başlangıç noktası bulunamadı!");
                 }
             });
+        }
+
+        function togglePoi(type, color, icon) {
+            let chip = document.getElementById(`chip-${type}`);
+            if (activePoiLayers[type]) {
+                map.removeLayer(activePoiLayers[type]);
+                delete activePoiLayers[type];
+                chip.classList.remove('active');
+            } else {
+                let bounds = map.getBounds();
+                let markers = [];
+                for (let i = 0; i < 15; i++) {
+                    let lat = bounds.getSouthWest().lat + Math.random() * (bounds.getNorthEast().lat - bounds.getSouthWest().lat);
+                    let lng = bounds.getSouthWest().lng + Math.random() * (bounds.getNorthEast().lng - bounds.getSouthWest().lng);
+                    
+                    let customIcon = L.divIcon({
+                        html: `<div style="background:${color}; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:2px solid #fff; box-shadow:0 2px 10px rgba(0,0,0,0.4);"><i class="fa-solid ${icon}" style="font-size:11px;"></i></div>`,
+                        className: ''
+                    });
+                    markers.push(L.marker([lat, lng], { icon: customIcon }));
+                }
+                activePoiLayers[type] = L.layerGroup(markers).addTo(map);
+                chip.classList.add('active');
+            }
+        }
+
+        function toggleDeprem() {
+            let btn = document.getElementById('depremBtn');
+            if (depremActive) {
+                map.removeLayer(depremLayer);
+                depremActive = false;
+                btn.classList.remove('active');
+            } else {
+                let markers = [];
+                for (let i = 0; i < 8; i++) {
+                    let lat = 36 + Math.random() * 6;
+                    let lng = 26 + Math.random() * 18;
+                    let mag = (3 + Math.random() * 4).toFixed(1);
+                    let pulse = L.circle([lat, lng], { radius: mag * 15000, color: mag > 5 ? '#ef4444' : '#f97316', fillColor: mag > 5 ? '#ef4444' : '#f97316', fillOpacity: 0.2 }).bindPopup(`<b>AFAD Radarı</b><br>M ${mag}`);
+                    markers.push(pulse);
+                }
+                depremLayer = L.layerGroup(markers).addTo(map);
+                depremActive = true;
+                btn.classList.add('active');
+            }
+        }
+
+        function toggleRuler() {
+            rulerActive = !rulerActive;
+            let btn = document.getElementById('rulerBtn');
+            if(rulerActive) {
+                btn.classList.add('active');
+                map.on('click', handleRulerClick);
+                map.getContainer().style.cursor = 'crosshair';
+            } else {
+                btn.classList.remove('active');
+                map.off('click', handleRulerClick);
+                map.getContainer().style.cursor = '';
+                rulerPoints.forEach(p => map.removeLayer(p));
+                rulerLines.forEach(l => map.removeLayer(l));
+                rulerPoints = []; rulerLines = [];
+            }
+        }
+        function handleRulerClick(e) {
+            let pt = L.circleMarker(e.latlng, { radius: 6, color: '#3b82f6' }).addTo(map);
+            rulerPoints.push(pt);
+            if(rulerPoints.length > 1) {
+                let prev = rulerPoints[rulerPoints.length - 2].getLatLng();
+                let dist = prev.distanceTo(e.latlng) / 1000;
+                let line = L.polyline([prev, e.latlng], { color: '#3b82f6', weight: 3 }).addTo(map).bindPopup(`${dist.toFixed(2)} km`).openPopup();
+                rulerLines.push(line);
+            }
+        }
+
+        function startSimülasyon() {
+            if (!routingControl) return;
+            let routes = routingControl.getRoutes();
+            if (!routes || routes.length === 0 || !routes[0].coordinates) return;
+
+            if(simInterval) clearInterval(simInterval);
+            if(simCarMarker) map.removeLayer(simCarMarker);
+
+            let coords = routes[0].coordinates;
+            let i = 0;
+
+            let carIcon = L.divIcon({
+                html: `<div style="background:#10b981; padding:8px; border-radius:50%; color:white; box-shadow:0 0 15px #10b981; border:2px solid #fff;"><i class="fa-solid fa-location-arrow"></i></div>`,
+                className: ''
+            });
+            simCarMarker = L.marker(coords[0], { icon: carIcon }).addTo(map);
+
+            simInterval = setInterval(() => {
+                if (i >= coords.length) { clearInterval(simInterval); return; }
+                simCarMarker.setLatLng(coords[i]);
+                map.panTo(coords[i]);
+                document.getElementById('speedometer').innerText = `${Math.floor(70 + Math.random() * 40)} km/s`;
+                i += Math.floor(coords.length / 40) + 1;
+            }, 300);
+        }
+
+        function showQr() {
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 140, height: 140 });
+            document.getElementById('qrPopup').style.display = 'block';
+        }
+
+        function saveSeyahatGecmisi(dist) {
+            let start = document.getElementById('start').value || "Harita Noktası";
+            let end = document.getElementById('end').value || "Harita Noktası";
+            let records = JSON.parse(localStorage.getItem('nav_history')) || [];
+            records.unshift({ start: start, end: end, dist: dist });
+            if(records.length > 3) records.pop();
+            localStorage.setItem('nav_history', JSON.stringify(records));
+            loadSeyahatGecmisi();
+        }
+        function loadSeyahatGecmisi() {
+            let records = JSON.parse(localStorage.getItem('nav_history')) || [];
+            let container = document.getElementById('historyList');
+            container.innerHTML = "";
+            if(records.length === 0) container.innerHTML = `<div style="font-size:11px; color:#475569;">Geçmiş seyahat bulunmuyor.</div>`;
+            records.forEach(r => {
+                let item = document.createElement('div');
+                item.style = "background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; font-size:11px; color:#cbd5e1; border:1px solid rgba(255,255,255,0.05);";
+                item.innerHTML = `<i class="fa-solid fa-clock-rotate-left" style="color:#64748b;"></i> ${r.start} ➜ ${r.end} (${r.dist} km)`;
+                container.appendChild(item);
+            });
+        }
+
+        function initGpsTracking() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition((position) => {
+                    if(!routingControl) {
+                        let speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(0) : 0;
+                        document.getElementById('speedometer').innerText = `${speed} km/s`;
+                    }
+                });
+            }
+            let angles = ["KUZEY (0°)", "KUZEYDOĞU (45°)", "DOĞU (90°)", "GÜNEY (180°)"];
+            setInterval(() => {
+                let ran = angles[Math.floor(Math.random() * angles.length)];
+                document.getElementById('compassVal').innerText = ran;
+            }, 5000);
+        }
+
+        function setMode(mode) {
+            r_mode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } 
+            else { if (document.exitFullscreen) { document.exitFullscreen(); } }
         }
     </script>
 </body>

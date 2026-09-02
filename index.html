@@ -5,114 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ücretsiz Türkiye Navigasyon ve Rota Sistemi</title>
     
-    <!-- Yapılandırılmış Eksiksiz CSS Bağlantıları -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Resmi Harita ve Navigasyon Bağlantıları -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com" />
     <link rel="stylesheet" href="https://unpkg.com" />
     
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { height: 100vh; width: 100%; background: #f0f0f0; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Arial, sans-serif; }
+        #map { height: 100vh; width: 100%; background: #e5e3df; }
         .control-panel {
-            position: absolute; top: 20px; left: 20px; z-index: 1000;
-            background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 300px;
+            position: absolute; top: 15px; left: 15px; z-index: 1000;
+            background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); width: 280px;
         }
-        h3 { margin-top: 0; color: #333; font-size: 18px; border-bottom: 2px solid #28a745; padding-bottom: 8px; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        button { width: 100%; padding: 11px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; }
+        h3 { margin: 0 0 10px 0; color: #333; font-size: 16px; border-bottom: 2px solid #28a745; padding-bottom: 5px; }
+        input { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button:hover { background: #218838; }
-        .info-text { font-size: 12px; color: #666; margin-top: 10px; text-align: center; line-height: 1.4; }
+        .info { font-size: 11px; color: #666; margin-top: 8px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="control-panel">
         <h3>🗺️ Türkiye Navigasyon</h3>
-        <input type="text" id="start" placeholder="Başlangıç Noktası (Örn: İstanbul)">
-        <input type="text" id="end" placeholder="Varış Noktası (Örn: Ankara)">
+        <input type="text" id="start" placeholder="Başlangıç (Örn: İstanbul)">
+        <input type="text" id="end" placeholder="Varış (Örn: Ankara)">
         <button onclick="calculateManualRoute()">Rotayı Hesapla</button>
-        <div class="info-text">
-            <strong>İpucu:</strong> Harita üzerinde sırayla iki farklı noktaya <strong>SAĞ TIKLAYARAK</strong> da rotanızı anında çizebilirsiniz!
-        </div>
+        <div class="info">Haritaya 2 kez <strong>SAĞ TIKLAYARAK</strong> da rota çizebilirsiniz!</div>
     </div>
 
     <div id="map"></div>
 
-    <!-- Yapılandırılmış Eksiksiz JS Kütüphaneleri -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- JavaScript Kütüphaneleri -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com"></script>
     <script src="https://unpkg.com"></script>
     
     <script>
-        // Haritayı Türkiye koordinatlarına odaklayarak başlatıyoruz
+        // Haritayı Türkiye merkezli aç
         const map = L.map('map').setView([38.9637, 35.2433], 6);
 
-        // Doğru OpenStreetMap sunucu katmanı
+        // Standart Harita Görünümü Katmanı
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; OpenStreetMap katkıda bulunanlar'
+            attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
         const geocoder = L.Control.Geocoder.nominatim();
         let routingControl = null;
         let clickWaypoints = [];
 
-        function drawRoute(startLatLng, endLatLng) {
-            if (routingControl) {
-                map.removeControl(routingControl);
-            }
+        function drawRoute(start, end) {
+            if (routingControl) { map.removeControl(routingControl); }
             routingControl = L.Routing.control({
-                waypoints: [startLatLng, endLatLng],
+                waypoints: [start, end],
                 routeWhileDragging: true,
                 language: 'tr'
             }).addTo(map);
         }
 
-        // Sağ Tıkla Rota Çizme Modülü
+        // Sağ tıkla rota modülü
         map.on('contextmenu', function(e) {
-            if (clickWaypoints.length >= 2) {
-                clickWaypoints = [];
-                // Önceki geçici işaretçileri temizle
-                map.eachLayer(function (layer) {
-                    if (layer instanceof L.Marker && !layer.options.draggable) {
-                        map.removeLayer(layer);
-                    }
-                });
-            }
-            
+            if (clickWaypoints.length >= 2) { clickWaypoints = []; }
             clickWaypoints.push(e.latlng);
             L.marker(e.latlng).addTo(map);
-
-            if (clickWaypoints.length === 2) {
-                drawRoute(clickWaypoints[0], clickWaypoints[1]);
-            }
+            if (clickWaypoints.length === 2) { drawRoute(clickWaypoints[0], clickWaypoints[1]); }
         });
 
-        // Manuel Kelime Arama ile Rota Çizme Modülü
+        // Arama kutusu modülü
         function calculateManualRoute() {
             const startQuery = document.getElementById('start').value;
             const endQuery = document.getElementById('end').value;
+            if (!startQuery || !endQuery) return alert("Alanları doldurun.");
 
-            if (!startQuery || !endQuery) {
-                alert("Lütfen başlangıç ve varış noktalarını doldurun.");
-                return;
-            }
-
-            geocoder.geocode(startQuery, function(startResults) {
-                if (startResults && startResults.length > 0) {
-                    const startLatLng = startResults[0].center;
-
-                    geocoder.geocode(endQuery, function(endResults) {
-                        if (endResults && endResults.length > 0) {
-                            const endLatLng = endResults[0].center;
-                            drawRoute(startLatLng, endLatLng);
-                        } else {
-                            alert("Varış noktası bulunamadı.");
+            geocoder.geocode(startQuery, function(res1) {
+                if (res1 && res1.length > 0) {
+                    geocoder.geocode(endQuery, function(res2) {
+                        if (res2 && res2.length > 0) {
+                            drawRoute(res1[0].center, res2[0].center);
                         }
                     });
-                } else {
-                    alert("Başlangıç noktası bulunamadı.");
                 }
             });
         }

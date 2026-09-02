@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ücretsiz Türkiye Navigasyon ve Rota Sistemi</title>
-    <!-- Leaflet Harita CSS -->
+    
+    <!-- Yapılandırılmış Eksiksiz CSS Bağlantıları -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://unpkg.com" />
-    <!-- Rotalama Eklentisi CSS -->
     <link rel="stylesheet" href="https://unpkg.com" />
-    <!-- Arama (Geocoding) CSS -->
-    <link rel="stylesheet" href="https://unpkg.com" />
+    
     <style>
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { height: 100vh; width: 100%; }
+        #map { height: 100vh; width: 100%; background: #f0f0f0; }
         .control-panel {
             position: absolute; top: 20px; left: 20px; z-index: 1000;
             background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px;
@@ -29,8 +29,8 @@
 
     <div class="control-panel">
         <h3>🗺️ Türkiye Navigasyon</h3>
-        <input type="text" id="start" placeholder="Başlangıç Noktası veya İl/İlçe">
-        <input type="text" id="end" placeholder="Varış Noktası veya İl/İlçe">
+        <input type="text" id="start" placeholder="Başlangıç Noktası (Örn: İstanbul)">
+        <input type="text" id="end" placeholder="Varış Noktası (Örn: Ankara)">
         <button onclick="calculateManualRoute()">Rotayı Hesapla</button>
         <div class="info-text">
             <strong>İpucu:</strong> Harita üzerinde sırayla iki farklı noktaya <strong>SAĞ TIKLAYARAK</strong> da rotanızı anında çizebilirsiniz!
@@ -39,27 +39,25 @@
 
     <div id="map"></div>
 
-    <!-- JS Kütüphaneleri -->
+    <!-- Yapılandırılmış Eksiksiz JS Kütüphaneleri -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com"></script>
     <script src="https://unpkg.com"></script>
-    <script src="https://unpkg.com"></script>
+    
     <script>
-        // Haritayı Türkiye merkezli başlatıyoruz
+        // Haritayı Türkiye koordinatlarına odaklayarak başlatıyoruz
         const map = L.map('map').setView([38.9637, 35.2433], 6);
 
-        // Google Haritalar benzeri altlık katman
+        // Doğru OpenStreetMap sunucu katmanı
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap katkıda bulunanlar'
         }).addTo(map);
 
-        // Sağ üst köşeye arama motoru ekleme
         const geocoder = L.Control.Geocoder.nominatim();
-        L.Control.geocoder({ geocoder: geocoder, placeholder: "Yer ara...", position: "topright" }).addTo(map);
-
         let routingControl = null;
         let clickWaypoints = [];
 
-        // Dinamik Rota Çizme Fonksiyonu
         function drawRoute(startLatLng, endLatLng) {
             if (routingControl) {
                 map.removeControl(routingControl);
@@ -67,28 +65,31 @@
             routingControl = L.Routing.control({
                 waypoints: [startLatLng, endLatLng],
                 routeWhileDragging: true,
-                language: 'tr',
-                collapsible: true
+                language: 'tr'
             }).addTo(map);
         }
 
-        // 1. YÖNTEM: Haritaya sırayla iki kez sağ tıklayarak rota çizme
+        // Sağ Tıkla Rota Çizme Modülü
         map.on('contextmenu', function(e) {
             if (clickWaypoints.length >= 2) {
-                clickWaypoints = []; // 2 noktadan fazlaysa sıfırla
+                clickWaypoints = [];
+                // Önceki geçici işaretçileri temizle
+                map.eachLayer(function (layer) {
+                    if (layer instanceof L.Marker && !layer.options.draggable) {
+                        map.removeLayer(layer);
+                    }
+                });
             }
             
             clickWaypoints.push(e.latlng);
-            
-            // Seçilen noktaya geçici işaretçi ekle
-            L.marker(e.latlng).addTo(map).target = 'temp-marker';
+            L.marker(e.latlng).addTo(map);
 
             if (clickWaypoints.length === 2) {
                 drawRoute(clickWaypoints[0], clickWaypoints[1]);
             }
         });
 
-        // 2. YÖNTEM: Kutulara yazılan adresleri internetten bulup rota çizme
+        // Manuel Kelime Arama ile Rota Çizme Modülü
         function calculateManualRoute() {
             const startQuery = document.getElementById('start').value;
             const endQuery = document.getElementById('end').value;
@@ -98,22 +99,20 @@
                 return;
             }
 
-            // Başlangıç adresini koordinata çevir
             geocoder.geocode(startQuery, function(startResults) {
                 if (startResults && startResults.length > 0) {
                     const startLatLng = startResults[0].center;
 
-                    // Varış adresini koordinata çevir
                     geocoder.geocode(endQuery, function(endResults) {
                         if (endResults && endResults.length > 0) {
                             const endLatLng = endResults[0].center;
                             drawRoute(startLatLng, endLatLng);
                         } else {
-                            alert("Varış noktası bulunamadı! Lütfen tekrar deneyin.");
+                            alert("Varış noktası bulunamadı.");
                         }
                     });
                 } else {
-                    alert("Başlangıç noktası bulunamadı! Lütfen tekrar deneyin.");
+                    alert("Başlangıç noktası bulunamadı.");
                 }
             });
         }

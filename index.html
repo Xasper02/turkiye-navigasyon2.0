@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TR-Navigasyon Pro | Türkiye'nin Akıllı Rota Sistemi</title>
     
-    <!-- %100 Güvenli ve Hızlı Cloudflare Harita Stil Bağlantıları -->
-    <link rel="stylesheet" href="https://cloudflare.com" />
-    <link rel="stylesheet" href="https://cloudflare.com" />
-    <link rel="stylesheet" href="https://cloudflare.com" />
+    <!-- Resmi ve Orijinal Harita Stil Bağlantıları -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <link rel="stylesheet" href="https://unpkg.com" />
     
-    <!-- Google Fonts, FontAwesome İkonları ve QR Code Kütüphanesi -->
+    <!-- Google Fonts ve FontAwesome İkonları -->
     <link rel="stylesheet" href="https://googleapis.com">
     <link rel="stylesheet" href="https://cloudflare.com">
     <script src="https://cloudflare.com"></script>
@@ -214,10 +214,10 @@
     </div>
 
     <div id="map"></div>
-    <!-- %100 Çalışma Garantili Güvenli Cloudflare Motor Bağlantıları -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/perliedman-leaflet-control-geocoder/2.4.0/Control.Geocoder.min.js"></script>
+    <!-- Resmi ve Orijinal JavaScript Kütüphaneleri (Hata Engelleme Garantili) -->
+    <script src="https://unpkg.com"></script>
+    <script src="https://unpkg.com"></script>
+    <script src="https://unpkg.com"></script>
     
     <script>
         let map = null, routingControl = null, currentSkin = null;
@@ -228,10 +228,8 @@
         let depremActive = false, depremLayer = null;
         let simInterval = null, simCarMarker = null;
 
-        // Tarayıcıdaki 'L is not defined' hatasını kalıcı olarak engellemek amacıyla tüm fonksiyonları sarmalayan ana tetikleyici
         function checkAndBuildMap() {
             if (typeof L === 'undefined' || typeof L.Routing === 'undefined' || typeof L.Control.Geocoder === 'undefined') {
-                console.log('Altyapı kütüphaneleri yükleniyor, lütfen bekleyin...');
                 setTimeout(checkAndBuildMap, 150);
                 return;
             }
@@ -276,7 +274,6 @@
 
             loadSeyahatGecmisi();
 
-            // Harita araçları fonksiyonlarının global kapsama bağlanması (Tuşların çökmesini engeller)
             window.changeMapSkin = function(skinKey) {
                 if (!map) return;
                 map.removeLayer(currentSkin);

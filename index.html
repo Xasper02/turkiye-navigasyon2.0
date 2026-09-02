@@ -112,10 +112,10 @@
 
         <!-- Ulaşım Modu -->
         <div class="mode-selector">
-            <div class="mode-btn active" onclick="setMode('car')"><i class="fa-solid fa-car"></i></div>
-            <div class="mode-btn" onclick="setMode('bike')"><i class="fa-solid fa-motorcycle"></i></div>
-            <div class="mode-btn" onclick="setMode('bicycle')"><i class="fa-solid fa-bicycle"></i></div>
-            <div class="mode-btn" onclick="setMode('walk')"><i class="fa-solid fa-walking"></i></div>
+            <button type="button" class="mode-btn active" onclick="setMode('car')"><i class="fa-solid fa-car"></i></button>
+            <button type="button" class="mode-btn" onclick="setMode('bike')"><i class="fa-solid fa-motorcycle"></i></button>
+            <button type="button" class="mode-btn" onclick="setMode('bicycle')"><i class="fa-solid fa-bicycle"></i></button>
+            <button type="button" class="mode-btn" onclick="setMode('walk')"><i class="fa-solid fa-walking"></i></button>
         </div>
 
         <!-- Adres Girişleri -->
@@ -138,7 +138,7 @@
             </select>
         </div>
 
-        <button class="btn-prime" style="margin-top:10px;" onclick="calculateManualRoute()">
+        <button type="button" class="btn-prime" style="margin-top:10px;" onclick="calculateManualRoute()">
             <i class="fa-solid fa-compass"></i> Akıllı Rota Çiz
         </button>
 
@@ -168,8 +168,8 @@
             <div class="stat-row"><span>Yol & HGS Maliyeti:</span><span><strong id="resCost">-</strong> TL</span></div>
             
             <div class="action-grid">
-                <button class="btn-sec" onclick="startSimülasyon()"><i class="fa-solid fa-play" style="color:#10b981;"></i> Simüle Et</button>
-                <button class="btn-sec" onclick="showQr()"><i class="fa-solid fa-qrcode"></i> QR Paylaş</button>
+                <button type="button" class="btn-sec" onclick="startSimülasyon()"><i class="fa-solid fa-play" style="color:#10b981;"></i> Simüle Et</button>
+                <button type="button" class="btn-sec" onclick="showQr()"><i class="fa-solid fa-qrcode"></i> QR Paylaş</button>
             </div>
         </div>
 
@@ -187,14 +187,14 @@
     <!-- Sağ Harita Modu ve Çizim Araçları -->
     <div class="map-tools">
         <div class="tool-box">
-            <button class="tool-btn" title="Uydu Görünümü" onclick="changeMapSkin('satellite')" id="skin-sat"><i class="fa-solid fa-earth-americas"></i></button>
-            <button class="tool-btn active" title="Karanlık Kokpit Modu" onclick="changeMapSkin('dark')" id="skin-dark"><i class="fa-solid fa-moon"></i></button>
-            <button class="tool-btn" title="Klasik Açık Mod" onclick="changeMapSkin('light')" id="skin-light"><i class="fa-solid fa-sun"></i></button>
+            <button type="button" class="tool-btn" title="Uydu Görünümü" onclick="changeMapSkin('satellite')" id="skin-sat"><i class="fa-solid fa-earth-americas"></i></button>
+            <button type="button" class="tool-btn active" title="Karanlık Kokpit Modu" onclick="changeMapSkin('dark')" id="skin-dark"><i class="fa-solid fa-moon"></i></button>
+            <button type="button" class="tool-btn" title="Klasik Açık Mod" onclick="changeMapSkin('light')" id="skin-light"><i class="fa-solid fa-sun"></i></button>
         </div>
         <div class="tool-box">
-            <button class="tool-btn" title="Kuş Uçuşu Mesafe Ölçer" onclick="toggleRuler()" id="rulerBtn"><i class="fa-solid fa-ruler-combined"></i></button>
-            <button class="tool-btn" title="Canlı Deprem Radarı (Son 24sa)" onclick="toggleDeprem()" id="depremBtn"><i class="fa-solid fa-house-crack"></i></button>
-            <button class="tool-btn" title="Tam Ekran Modu" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
+            <button type="button" class="tool-btn" title="Kuş Uçuşu Mesafe Ölçer" onclick="toggleRuler()" id="rulerBtn"><i class="fa-solid fa-ruler-combined"></i></button>
+            <button type="button" class="tool-btn" title="Canlı Deprem Radarı (Son 24sa)" onclick="toggleDeprem()" id="depremBtn"><i class="fa-solid fa-house-crack"></i></button>
+            <button type="button" class="tool-btn" title="Tam Ekran Modu" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
         </div>
     </div>
 
@@ -217,10 +217,10 @@
     <!-- %100 Çalışma Garantili Güvenli Cloudflare Motor Bağlantıları -->
     <script src="https://cloudflare.com"></script>
     <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/perliedman-leaflet-control-geocoder/2.4.0/Control.Geocoder.min.js"></script>
     
     <script>
-        let map, routingControl, currentSkin;
+        let map = null, routingControl = null, currentSkin = null;
         let activePoiLayers = {};
         let clickWaypoints = [];
         let r_mode = 'car';
@@ -228,19 +228,19 @@
         let depremActive = false, depremLayer = null;
         let simInterval = null, simCarMarker = null;
 
-        const skins = {
-            dark: L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }),
-            light: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
-            satellite: L.tileLayer('https://arcgisonline.com{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' })
-        };
-
-        // Tarayıcıdaki 'L is not defined' senkronizasyon hatasını engelleyen döngüsel koruma fonksiyonu
-        function initMapSystem() {
-            if (typeof L === 'undefined' || typeof L.Routing === 'undefined') {
-                console.log('Harita motoru bekleniyor...');
-                setTimeout(initMapSystem, 100);
+        // Tarayıcıdaki 'L is not defined' hatasını kalıcı olarak engellemek amacıyla tüm fonksiyonları sarmalayan ana tetikleyici
+        function checkAndBuildMap() {
+            if (typeof L === 'undefined' || typeof L.Routing === 'undefined' || typeof L.Control.Geocoder === 'undefined') {
+                console.log('Altyapı kütüphaneleri yükleniyor, lütfen bekleyin...');
+                setTimeout(checkAndBuildMap, 150);
                 return;
             }
+
+            const skins = {
+                dark: L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; CARTO' }),
+                light: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }),
+                satellite: L.tileLayer('https://arcgisonline.com{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' })
+            };
 
             map = L.map('map', { zoomControl: false }).setView([39.9334, 32.8597], 6);
             currentSkin = skins.dark;
@@ -251,16 +251,17 @@
                     const loader = document.getElementById('loader');
                     if (loader) {
                         loader.style.opacity = '0';
-                        loader.style.transition = 'opacity 0.4s ease';
-                        setTimeout(() => { loader.style.display = 'none'; }, 400);
+                        loader.style.transition = 'opacity 0.3s ease';
+                        setTimeout(() => { loader.style.display = 'none'; }, 300);
                     }
-                }, 600);
+                }, 400);
             });
 
             initGpsTracking();
 
             map.on('mousemove', function(e) {
-                document.getElementById('coordVal').innerText = `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+                const element = document.getElementById('coordVal');
+                if(element) element.innerText = `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
             });
 
             map.on('contextmenu', function(e) {
@@ -274,25 +275,26 @@
             });
 
             loadSeyahatGecmisi();
+
+            // Harita araçları fonksiyonlarının global kapsama bağlanması (Tuşların çökmesini engeller)
+            window.changeMapSkin = function(skinKey) {
+                if (!map) return;
+                map.removeLayer(currentSkin);
+                currentSkin = skins[skinKey];
+                currentSkin.addTo(map);
+                document.querySelectorAll('.tool-box button').forEach(b => b.classList.remove('active'));
+                if(skinKey === 'dark') document.getElementById('skin-dark').classList.add('active');
+                if(skinKey === 'light') document.getElementById('skin-light').classList.add('active');
+                if(skinKey === 'satellite') document.getElementById('skin-sat').classList.add('active');
+            };
         }
 
-        window.onload = function() {
-            initMapSystem();
-        };
-
-        function changeMapSkin(skinKey) {
-            if (!map) return;
-            map.removeLayer(currentSkin);
-            currentSkin = skins[skinKey];
-            currentSkin.addTo(map);
-            document.querySelectorAll('.tool-box button').forEach(b => b.classList.remove('active'));
-            if(skinKey === 'dark') document.getElementById('skin-dark').classList.add('active');
-            if(skinKey === 'light') document.getElementById('skin-light').classList.add('active');
-            if(skinKey === 'satellite') document.getElementById('skin-sat').classList.add('active');
-        }
+        document.addEventListener("DOMContentLoaded", function() {
+            checkAndBuildMap();
+        });
 
         function executeRouting(startLatLng, endLatLng) {
-            if (!map) return;
+            if (!map || typeof L.Routing === 'undefined') return;
             if (routingControl) { map.removeControl(routingControl); }
             if (simInterval) clearInterval(simInterval);
             if (simCarMarker) map.removeLayer(simCarMarker);
@@ -314,7 +316,7 @@
 
             routingControl.on('routesfound', function(e) {
                 const routes = e.routes;
-                const primary = routes[0];
+                const primary = routes;
                 
                 let distKm = (primary.summary.totalDistance / 1000).toFixed(1);
                 let durationMin = Math.round(primary.summary.totalTime / 60);
@@ -346,9 +348,10 @@
             document.getElementById('resFuel').innerText = fuelLitre.toFixed(1);
             document.getElementById('resCost').innerText = Math.round(totalCost);
         }
-        function updateMaliye() { updateCalculatedMaliyet(null); }
+        window.updateMaliye = function() { updateCalculatedMaliyet(null); };
 
-        function calculateManualRoute() {
+        window.calculateManualRoute = function() {
+            if (typeof L === 'undefined' || typeof L.Control.Geocoder === 'undefined') return;
             const startQuery = document.getElementById('start').value;
             const endQuery = document.getElementById('end').value;
             if (!startQuery || !endQuery) return alert("Alanları doldurun.");
@@ -357,13 +360,13 @@
             gc.geocode(startQuery, function(r1) {
                 if(r1 && r1.length > 0) {
                     gc.geocode(endQuery, function(r2) {
-                        if(r2 && r2.length > 0) { executeRouting(r1[0].center, r2[0].center); }
+                        if(r2 && r2.length > 0) { executeRouting(r1.center, r2.center); }
                     });
                 }
             });
-        }
+        };
 
-        function togglePoi(type, color, icon) {
+        window.togglePoi = function(type, color, icon) {
             if (!map) return;
             let chip = document.getElementById(`chip-${type}`);
             if (activePoiLayers[type]) {
@@ -386,9 +389,9 @@
                 activePoiLayers[type] = L.layerGroup(markers).addTo(map);
                 chip.classList.add('active');
             }
-        }
+        };
 
-        function toggleDeprem() {
+        window.toggleDeprem = function() {
             if (!map) return;
             let btn = document.getElementById('depremBtn');
             if (depremActive) {
@@ -408,9 +411,9 @@
                 depremActive = true;
                 btn.classList.add('active');
             }
-        }
+        };
 
-        function toggleRuler() {
+        window.toggleRuler = function() {
             rulerActive = !rulerActive;
             let btn = document.getElementById('rulerBtn');
             if(rulerActive) {
@@ -425,7 +428,7 @@
                 rulerLines.forEach(l => map.removeLayer(l));
                 rulerPoints = []; rulerLines = [];
             }
-        }
+        };
         function handleRulerClick(e) {
             let pt = L.circleMarker(e.latlng, { radius: 6, color: '#3b82f6' }).addTo(map);
             rulerPoints.push(pt);
@@ -437,22 +440,22 @@
             }
         }
 
-        function startSimülasyon() {
+        window.startSimülasyon = function() {
             if (!routingControl || !map) return;
             let routes = routingControl.getRoutes();
-            if (!routes || routes.length === 0 || !routes[0].coordinates) return;
+            if (!routes || routes.length === 0 || !routes.coordinates) return;
 
             if(simInterval) clearInterval(simInterval);
             if(simCarMarker) map.removeLayer(simCarMarker);
 
-            let coords = routes[0].coordinates;
+            let coords = routes.coordinates;
             let i = 0;
 
             let carIcon = L.divIcon({
                 html: `<div style="background:#10b981; padding:8px; border-radius:50%; color:white; box-shadow:0 0 15px #10b981; border:2px solid #fff;"><i class="fa-solid fa-location-arrow"></i></div>`,
                 className: ''
             });
-            simCarMarker = L.marker(coords[0], { icon: carIcon }).addTo(map);
+            simCarMarker = L.marker(coords, { icon: carIcon }).addTo(map);
 
             simInterval = setInterval(() => {
                 if (i >= coords.length) { clearInterval(simInterval); return; }
@@ -461,13 +464,15 @@
                 document.getElementById('speedometer').innerText = `${Math.floor(70 + Math.random() * 40)} km/s`;
                 i += Math.floor(coords.length / 40) + 1;
             }, 300);
-        }
+        };
 
-        function showQr() {
+        window.showQr = function() {
             document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 140, height: 140 });
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 140, height: 140 });
+            }
             document.getElementById('qrPopup').style.display = 'block';
-        }
+        };
 
         function saveSeyahatGecmisi(dist) {
             let start = document.getElementById('start').value || "Harita Noktası";
@@ -481,6 +486,7 @@
         function loadSeyahatGecmisi() {
             let records = JSON.parse(localStorage.getItem('nav_history')) || [];
             let container = document.getElementById('historyList');
+            if(!container) return;
             container.innerHTML = "";
             if(records.length === 0) container.innerHTML = `<div style="font-size:11px; color:#475569;">Geçmiş seyahat bulunmuyor.</div>`;
             records.forEach(r => {
@@ -503,20 +509,21 @@
             let angles = ["KUZEY (0°)", "KUZEYDOĞU (45°)", "DOĞU (90°)", "GÜNEY (180°)"];
             setInterval(() => {
                 let ran = angles[Math.floor(Math.random() * angles.length)];
-                document.getElementById('compassVal').innerText = ran;
+                const comp = document.getElementById('compassVal');
+                if(comp) comp.innerText = ran;
             }, 5000);
         }
 
-        function setMode(mode) {
+        window.setMode = function(mode) {
             r_mode = mode;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
+            if(event && event.currentTarget) event.currentTarget.classList.add('active');
+        };
 
-        function toggleFullscreen() {
+        window.toggleFullscreen = function() {
             if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } 
             else { if (document.exitFullscreen) { document.exitFullscreen(); } }
-        }
+        };
     </script>
 </body>
 </html>

@@ -239,7 +239,18 @@
             currentSkin = skins.dark;
             currentSkin.addTo(map);
 
-            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1200);
+            // GÜVENLİ AÇILIŞ: Harita hazır olunca yükleme ekranını akıcıca kaldırır
+            map.whenReady(function() {
+                setTimeout(() => {
+                    const loader = document.getElementById('loader');
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        loader.style.transition = 'opacity 0.4s ease';
+                        setTimeout(() => { loader.style.display = 'none'; }, 400);
+                    }
+                }, 600);
+            });
+
             initGpsTracking();
 
             map.on('mousemove', function(e) {
@@ -252,7 +263,7 @@
                 L.circleMarker(e.latlng, { radius: 8, color: '#10b981', fillColor: '#060814', fillOpacity: 1 }).addTo(map);
                 
                 if (clickWaypoints.length === 2) {
-                    executeRouting(clickWaypoints, clickWaypoints);
+                    executeRouting(clickWaypoints[0], clickWaypoints[1]);
                 }
             });
 

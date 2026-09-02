@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ücretsiz Türkiye Navigasyon ve Rota Sistemi</title>
+    <meta name="description" content="Tamamen ücretsiz, reklamsız ve hızlı Türkiye haritası. En kısa yol tarifi ve rota hesaplama sistemi.">
+    
+    <!-- Yaprak Harita Kütüphanesi (Leaflet) -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+
+    <!-- Ücretsiz Rota Çizim Motoru Eklentisi -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+
+    <!-- Ücretsiz Şehir/İlçe Arama Kutusu Eklentisi -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #map { height: 100%; width: 100%; position: absolute; top: 0; bottom: 0; z-index: 1; }
+        #ust-panel {
+            position: absolute; top: 10px; left: 60px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-width: 300px;
+        }
+        h1 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
+        p { margin: 0; font-size: 12px; color: #666; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <div id="ust-panel">
+        <h1>Türkiye Ücretsiz Navigasyon</h1>
+        <p>Sağ üstteki büyüteçten yer aratın veya haritaya <b>sırayla iki kez SAĞ TIKLAYARAK</b> en kısa rotanızı anında çizin.</p>
+    </div>
+    
+    <div id="map"></div>
+
+    <script>
+        // Haritayı Türkiye'nin coğrafi merkezine kuruyoruz
+        var map = L.map('map').setView([38.9637, 35.2433], 6);
+
+        // OpenStreetMap ücretsiz harita katmanlarını yüklüyoruz
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap katkıda bulunanlar'
+        }).addTo(map);
+
+        // Rota kontrol mekanizması (OSRM Ücretsiz Genel Sunucusu üzerinden çalışır)
+        var control = L.Routing.control({
+            waypoints: [],
+            routeWhileDragging: true,
+            language: 'tr',
+            collapsible: true, // Yol tarifi listesi daraltılabilir
+            createMarker: function(i, wp, nWps) {
+                return L.marker(wp.latLng, { draggable: true });
+            }
+        }).addTo(map);
+
+        // Haritaya tıklayarak rota seçme fonksiyonu
+        var tiklama = 0;
+        map.on('contextmenu', function(e) {
+            if (tiklama === 0) {
+                control.spliceWaypoints(0, 1, e.latlng);
+                tiklama = 1;
+            } else {
+                control.spliceWaypoints(1, 1, e.latlng);
+                tiklama = 0;
+            }
+        });
+
+        // Ücretsiz Adres/Şehir Arama Kutusunu Haritaya Ekleme (Geocoding)
+        L.Control.geocoder({
+            defaultMarkGeocode: true,
+            placeholder: "Şehir, ilçe veya mekan arayın...",
+            textStrings: { text: 'Ara', nomatch: 'Sonuç bulunamadı' }
+        }).addTo(map);
+    </script>
+</body>
+</html>
